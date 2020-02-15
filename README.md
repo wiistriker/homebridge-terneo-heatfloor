@@ -7,7 +7,7 @@
 Homebridge plugin for Terneo floor heaters http://terneo.ua/ which work
 with local API and doesnt require terneo cloud access.
 
-![Demo 1](images/IMG_7583.png)![Demo 2](images/IMG_7584.png)![Demo 3](images/IMG_7585.png)
+![Demo 1](images/IMG_7583.png) ![Demo 2](images/IMG_7584.png) ![Demo 3](images/IMG_7585.png)
 
 # Installation
 
