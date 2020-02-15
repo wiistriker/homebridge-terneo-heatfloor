@@ -1,0 +1,29 @@
+{
+    "name": "homebridge-terneo-heatfloor",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "dependencies": {
+        "axios": ">=0.19.2"
+    },
+    "engines": {
+        "homebridge": ">=0.4.50",
+        "node": ">=12.13.0"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/wiistriker/homebridge-terneo-heatfloor.git"
+    },
+    "keywords": [
+        "homebridge-plugin"
+    ],
+    "author": "wiistriker",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/wiistriker/homebridge-terneo-heatfloor/issues"
+    },
+    "homepage": "https://github.com/wiistriker/homebridge-terneo-heatfloor#readme"
+}
