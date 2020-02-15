@@ -1,17 +1,23 @@
 # homebridge-terneo-heatfloor
 
+![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/wiistriker/homebridge-terneo-heatfloor)
 [![GitHub stars](https://img.shields.io/github/stars/wiistriker/homebridge-terneo-heatfloor)](https://github.com/wiistriker/homebridge-terneo-heatfloor/stargazers)
 [![GitHub issues](https://img.shields.io/github/issues/wiistriker/homebridge-terneo-heatfloor)](https://github.com/wiistriker/homebridge-terneo-heatfloor/issues)
 
 Homebridge plugin for Terneo floor heaters http://terneo.ua/ which work
 with local API and doesnt require terneo cloud access.
 
+
 ![Demo 1](images/IMG_7583.png) ![Demo 2](images/IMG_7584.png) ![Demo 3](images/IMG_7585.png)
+
+
+By default this plugin use temperature in range of 5 and 40 and update current state
+every 60 seconds. When you set temperature to 5, device go to scheduled mode (todo: make it configurable)
 
 # Installation
 
-1. Install homebridge using. Please refer to official documentation how to do it.
-2. Install this plugin using: npm install -g homebridge-terneo-heatfloor
+1. Install homebridge. Please refer to official documentation how to do it.
+2. Install this plugin using: `npm install -g homebridge-terneo-heatfloor`
 3. Update your configuration file
 
 # Configuration
