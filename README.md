@@ -1,4 +1,9 @@
 # homebridge-terneo-heatfloor
+
+![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/wiistriker/homebridge-terneo-heatfloor)
+[![GitHub stars](https://img.shields.io/github/stars/wiistriker/homebridge-terneo-heatfloor)](https://github.com/wiistriker/homebridge-terneo-heatfloor/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/wiistriker/homebridge-terneo-heatfloor)](https://github.com/wiistriker/homebridge-terneo-heatfloor/issues)
+
 Homebridge plugin for Terneo floor heaters http://terneo.ua/ which work
 with local API and doesnt require terneo cloud access.
 
