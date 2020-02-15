@@ -83,6 +83,8 @@ TerneoHeatfloor.prototype = {
                             }
                         });
 
+                        this.log("Terneo cmd:1 response: ", params);
+
                         state["power"] = !params['125'];
                         state["lock"] = params[124];
 
@@ -91,6 +93,8 @@ TerneoHeatfloor.prototype = {
                         })
                             .then((response) => {
                                 //this.log(response.data);
+                                this.log("Terneo cmd:4 response: ", response);
+
                                 if (response.data['t.1']) {
                                     state['current_temperature'] = response.data['t.1'] / 16;
                                     state['target_temperature'] = response.data['t.5'] / 16;
@@ -99,7 +103,7 @@ TerneoHeatfloor.prototype = {
                                     return state;
                                 } else {
                                     throw new Error('Response has no temperature');
-                                    this.log.error("Error getting temperature from response");
+                                    //this.log.error("Error getting temperature from response");
                                 }
                             })
                         ;
@@ -177,6 +181,8 @@ TerneoHeatfloor.prototype = {
                     par: params
                 })
                     .then((response) => {
+                        this.log.info('[Terneo][DEBUG] (' + this.serial + ') HeatingThresholdTemperature - set response', response);
+
                         if (response.data.success) {
                             lastState['target_temperature'] = value;
                             $startStateUpdatePoll();
@@ -212,6 +218,8 @@ TerneoHeatfloor.prototype = {
                     })
                         .then((response) => {
                             //this.log(response.data);
+                            this.log.info('[Terneo][DEBUG] (' + this.serial + ') activeCharacteristic set response', response);
+
                             if (response.data.success) {
                                 lastState['power'] = power_on;
                                 $startStateUpdatePoll();
@@ -249,7 +257,7 @@ TerneoHeatfloor.prototype = {
                         ]
                     })
                         .then((response) => {
-                            this.log(response.data);
+                            this.log.info('[Terneo][DEBUG] (' + this.serial + ') lockPhysicalControlsCharacteristic set response', response);
                             if (response.data.success) {
                                 lastState['lock'] = lock_on;
                                 $startStateUpdatePoll();
@@ -289,7 +297,7 @@ TerneoHeatfloor.prototype = {
                     }
 
                     if (state['current_temperature'] !== lastState['current_temperature']) {
-                        this.log.info('[Terneo][DEBUG] (' + this.serial + ') CurrentTemperatureCharacteristic change: ' + state['target_temperature']);
+                        this.log.info('[Terneo][DEBUG] (' + this.serial + ') CurrentTemperatureCharacteristic change: ' + state['current_temperature']);
                         currentTemperatureCharacteristic.updateValue(state['current_temperature']);
                     }
 
