@@ -29,7 +29,7 @@ Add to your configuration file:
     "accessory": "TerneoHeatfloor",
     "name": "Теплый пол",
     "ip": "192.168.1.90",
-    "serial": "160025001143504D3130342D000159"
+    "serial": "160025..........."
 }
 ```
 
