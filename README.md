@@ -14,6 +14,13 @@ with local API and doesnt require terneo cloud access.
 By default this plugin use temperature in range of 5 and 40 and update current state
 every 60 seconds. When you set temperature to 5, device go to scheduled mode (todo: make it configurable)
 
+# Requirements
+
+You need Terneo device with firmware >= 2.3. Also you need to enable local API as described in official terneo documentation:
+
+- ru: https://terneo-api.readthedocs.io/ru/latest/ru/safety_ru.html
+- en: https://terneo-api.readthedocs.io/ru/latest/en/safety.html
+
 # Installation
 
 1. Install homebridge. Please refer to official documentation how to do it.
