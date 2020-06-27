@@ -16,7 +16,9 @@ every 60 seconds. When you set temperature to 5, device go to scheduled mode (to
 
 # Requirements
 
-You need Terneo device with firmware >= 2.3. Also you need to enable local API as described in official terneo documentation:
+You need Terneo device with firmware >= 2.3.
+
+Also you need to enable local API or obtain auth token for firmware >= 2.4 as described in official terneo documentation:
 
 - ru: https://terneo-api.readthedocs.io/ru/latest/ru/safety_ru.html
 - en: https://terneo-api.readthedocs.io/ru/latest/en/safety.html
@@ -45,6 +47,10 @@ Add to your configuration file:
 - `ip` – ip address of your device
 - `serial` – serial number of your device
 
+## Optional parameters:
+- `auth` – auth key obtained from terneo cloud
+- `debug` – true/false if you want to get more/less verbose logs
+
 ## Where i can get ip address?
 
 Please refer to terneo official documentation how to obtain ip address of your device.
@@ -58,20 +64,6 @@ When you obtain ip address, open in your browser address `http://<ip>`, for exam
 ![Obtain serial number](images/sn.png)
 
 Copy long line of text in `S/N`
-
-# Debug
-
-In case if you face with some issues please enable debug in homebridge to get more verbose output in logs. Also you can add ```debug: true``` config value in your accessory
-
-```
-{
-    "accessory": "TerneoHeatfloor",
-    "name": "Теплый пол",
-    "ip": "192.168.1.90",
-    "serial": "160025...........",
-    "debug": true
-}
-```
 
 # Policy
 

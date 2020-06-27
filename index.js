@@ -1,6 +1,7 @@
 var Service, Characteristic;
 const packageJson = require('./package.json');
 const axios = require('axios');
+const TOTP = require('totp.js');
 
 module.exports = function(homebridge) {
 	Service = homebridge.hap.Service;
@@ -18,6 +19,8 @@ function TerneoHeatfloor(log, config) {
 
 	this.manufacturer = 'Terneo';
 	this.serial = config.serial;
+	this.auth = config.auth || null;
+	this.time_offset = config.time_offset || 0;
 	this.model = config.model || packageJson.name;
 	this.firmware = config.firmware || packageJson.version;
 
@@ -28,7 +31,7 @@ function TerneoHeatfloor(log, config) {
 
 	this.debug = config.debug || false;
 
-	let initialize_message = '[Terneo] [DEBUG] Accessory initialized';
+	let initialize_message = '[Terneo] [INFO] Accessory initialized';
 	if (this.debug) {
         initialize_message += ', debug mode enabled';
     }
@@ -109,6 +112,8 @@ TerneoHeatfloor.prototype = {
             $commitParamsChangesPromise = axios.post(this.apiroute + '/api.cgi', {
                 sn: this.serial,
                 par: params
+            }, {
+                timeout: 3000
             })
                 .then((response) => {
                     paramsChanges = {};
@@ -145,6 +150,8 @@ TerneoHeatfloor.prototype = {
 
             stateUpdatePromise = axios.post(this.apiroute + '/api.cgi', {
                 cmd: 1
+            }, {
+                timeout: 3000
             })
                 .then((response) => {
                     if (response.data && response.data.par) {
@@ -179,6 +186,8 @@ TerneoHeatfloor.prototype = {
 
                         return axios.post(this.apiroute + '/api.cgi', {
                             cmd: 4
+                        }, {
+                            timeout: 3000
                         })
                             .then((response) => {
                                 if (response.data['t.1']) {
@@ -273,9 +282,24 @@ TerneoHeatfloor.prototype = {
                     params.push([ 2, 2, '1' ]);
                 }
 
-                axios.post(this.apiroute + '/api.cgi', {
-                    sn: this.serial,
-                    par: params
+                var post_params = {
+                    sn: this.serial
+                };
+
+                if (this.auth) {
+                    var start = new Date(2000, 0, 1, 0, 0, 0), now = new Date();
+                    post_params['time'] = (Math.round((now.getTime() - start.getTime()) / 1000) + this.time_offset) + '';
+
+                    const totp = new TOTP(this.auth, 9);
+                    post_params['auth'] = totp.genOTP();
+                }
+
+                post_params.par = params
+
+                //console.log(post_params);
+
+                axios.post(this.apiroute + '/api.cgi', post_params, {
+                    timeout: 3000
                 })
                     .then((response) => {
                         if (response.data.success) {
@@ -285,7 +309,7 @@ TerneoHeatfloor.prototype = {
                             $scheduleStateUpdatePoll(1000);
                             callback();
                         } else {
-                            this.log.warn('[Terneo] [WARNING] HeatingThresholdTemperature set failure');
+                            this.log.warn('[Terneo] [WARNING] HeatingThresholdTemperature set failure, response:', response.data);
                             callback(new Error('Error during set HeatingThresholdTemperature'));
                         }
                     })
@@ -309,11 +333,19 @@ TerneoHeatfloor.prototype = {
                 }
 
                 if (power_on !== undefined) {
-                    axios.post(this.apiroute + '/api.cgi', {
+                    var post_params = {
                         sn: this.serial,
                         par: [
                             [ 125, 7, power_on ? '0' : '1' ]
                         ]
+                    };
+
+                    if (this.auth) {
+                        post_params['auth'] = this.auth;
+                    }
+
+                    axios.post(this.apiroute + '/api.cgi', post_params, {
+                        timeout: 3000
                     })
                         .then((response) => {
                             if (response.data.success) {
@@ -323,11 +355,12 @@ TerneoHeatfloor.prototype = {
                                 $scheduleStateUpdatePoll(1000);
                                 callback();
                             } else {
-                                this.log.warn('[Terneo] [WARNING] Active set failure');
+                                this.log.warn('[Terneo] [WARNING] Active set failure', response.data);
                                 callback(new Error('Error during set Active'));
                             }
                         })
                         .catch((error) => {
+                            this.log.warn('[Terneo] [WARNING] Active set failure', error);
                             callback(error)
                         })
                     ;
@@ -349,11 +382,19 @@ TerneoHeatfloor.prototype = {
                 }
 
                 if (lock_on !== undefined) {
-                    axios.post(this.apiroute + '/api.cgi', {
+                    var post_params = {
                         sn: this.serial,
                         par: [
                             [ 124, 7, lock_on ? '1' : '0' ]
                         ]
+                    };
+
+                    if (this.auth) {
+                        post_params['auth'] = this.auth;
+                    }
+
+                    axios.post(this.apiroute + '/api.cgi', post_params, {
+                        timeout: 3000
                     })
                         .then((response) => {
                             if (response.data.success) {
@@ -363,11 +404,12 @@ TerneoHeatfloor.prototype = {
                                 $scheduleStateUpdatePoll(1000);
                                 callback();
                             } else {
-                                this.log.warn('[Terneo] [WARNING] LockPhysicalControls set failure');
+                                this.log.warn('[Terneo] [WARNING] LockPhysicalControls set failure, reponse:', response.data);
                                 callback(new Error('Error during set LockPhysicalControls'));
                             }
                         })
                         .catch((error) => {
+                            this.log.warn('[Terneo] [WARNING] LockPhysicalControls set failure', error);
                             callback(error)
                         })
                     ;
@@ -437,7 +479,7 @@ TerneoHeatfloor.prototype = {
                     switch (state['block']) {
                         case '2':
                         case '3':
-                            this.log.error('[Terneo] [ERROR] Block enabled! Please turn off local api blocking!');
+                            this.log.error('[Terneo] [ERROR] BLOCK ENABLED! Please turn off local api blocking!');
                             break;
                     }
 

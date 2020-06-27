@@ -4,7 +4,8 @@
     "description": "",
     "main": "index.js",
     "dependencies": {
-        "axios": ">=0.19.2"
+        "axios": ">=0.19.2",
+        "totp.js": "0.0.1"
     },
     "engines": {
         "homebridge": ">=0.4.50",
