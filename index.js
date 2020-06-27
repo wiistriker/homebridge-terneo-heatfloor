@@ -190,13 +190,13 @@ TerneoHeatfloor.prototype = {
 
                                     return state;
                                 } else {
-                                    console.log('cmd4 response', response.data);
+                                    this.logDebug('cmd:4 response', response.data);
                                     throw new Error('Response has no telemetry data');
                                 }
                             })
                         ;
                     } else {
-                        console.log('cmd1 response', response.data);
+                        this.logDebug('cmd:1 response', response.data);
                         throw new Error('Response has no parameters data');
                     }
                 })
