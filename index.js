@@ -25,12 +25,28 @@ function TerneoHeatfloor(log, config) {
 
     this.minTemp = config.minTemp || 5;
 	this.maxTemp = config.maxTemp || 40;
+
+	this.debug = config.debug || false;
+
+	let initialize_message = '[Terneo] [DEBUG] Accessory initialized';
+	if (this.debug) {
+        initialize_message += ', debug mode enabled';
+    }
+
+	this.log(initialize_message);
 }
 
 TerneoHeatfloor.prototype = {
     identify: function (callback) {
         //this.log('Identify requested!');
         callback()
+    },
+    logDebug: function() {
+        if (this.debug) {
+            this.log.info(...arguments);
+        } else {
+            this.log.debug(...arguments);
+        }
     },
     getServices: function () {
         var services = [];
@@ -47,7 +63,80 @@ TerneoHeatfloor.prototype = {
 
         var heaterService = new Service.HeaterCooler(this.name);
 
-        var lastState = {}, stateUpdatePromise = null;
+        var lastState = {}, stateUpdatePromise = null, paramsChanges = {}, $commitParamsChangesPromise = null, $commitParamsChangesTimeout = null;
+
+        $scheduleStateUpdatePoll = (timeout) => {
+            this.logDebug('[Terneo] [DEBUG] Schedule new state update after ' + (timeout / 1000) + ' sec.');
+            $stateUpdatePollTimeout = setTimeout(() => {
+                $stateUpdatePollTimeout = null;
+                $startStateUpdatePoll();
+            }, timeout);
+        };
+
+        const $appendParamChange = (param, type, value) => {
+            paramsChanges[param] = [type, value];
+        };
+
+        const $scheduleParamsChanges = (timeout) => {
+            if ($commitParamsChangesTimeout) {
+                clearTimeout($commitParamsChangesTimeout);
+            }
+
+            this.logDebug('[Terneo] [DEBUG] Schedule param changes after ' + (timeout / 1000) + ' sec.');
+            $commitParamsChangesTimeout = setTimeout(() => {
+                $commitParamsChangesTimeout = null;
+                $commitParamsChanges();
+            }, timeout);
+        }
+
+        const $commitParamsChanges = () => {
+            if ($commitParamsChangesPromise) {
+                return $commitParamsChangesPromise;
+            }
+
+            var params = [];
+
+            Object.keys(paramsChanges).forEach((param, index) => {
+                type_value_pair = paramsChanges[param];
+                params.push([ param, type_value_pair[0], type_value_pair[1] ]);
+            });
+
+            console.log('Commit param changes with', {
+                sn: this.serial,
+                par: params
+            });
+
+            $commitParamsChangesPromise = axios.post(this.apiroute + '/api.cgi', {
+                sn: this.serial,
+                par: params
+            })
+                .then((response) => {
+                    paramsChanges = {};
+
+                    console.log('Commit param changes response', response.data);
+
+                    if (response.data.success) {
+                        //this.log.info('[Terneo] [INFO] Active successfully setted to', value);
+
+                        //lastState['power'] = power_on;
+                        $scheduleStateUpdatePoll(1000);
+                        //callback();
+                    } else {
+                        this.log.warn('[Terneo] [WARNING] Active set failure');
+                        //callback(new Error('Error during set Active'));
+                    }
+                })
+                .catch((error) => {
+                    console.log('Commit param changes error', error);
+                    //callback(error)
+                })
+                .finally(() => {
+                    $commitParamsChangesPromise = null;
+                })
+            ;
+
+            return $commitParamsChangesPromise;
+        };
 
         const $stateUpdate = () => {
             if (stateUpdatePromise) {
@@ -101,11 +190,13 @@ TerneoHeatfloor.prototype = {
 
                                     return state;
                                 } else {
+                                    console.log('cmd4 response', response.data);
                                     throw new Error('Response has no telemetry data');
                                 }
                             })
                         ;
                     } else {
+                        console.log('cmd1 response', response.data);
                         throw new Error('Response has no parameters data');
                     }
                 })
@@ -161,7 +252,16 @@ TerneoHeatfloor.prototype = {
                 }
             })
             .on('set', (value, callback) => {
-                this.log.info('[Terneo] [DEBUG] Set HeatingThresholdTemperature to ' + value + ', type: ' + typeof(value));
+                this.logDebug('[Terneo] [DEBUG] Set HeatingThresholdTemperature to ' + value + ', type: ' + typeof(value));
+
+                /*
+                $appendParamChange(5, 1, value + '');
+                $appendParamChange(2, 2, value <= this.minTemp ? '0' : '1');
+                $scheduleParamsChanges(300);
+                callback();
+
+                return;
+                 */
 
                 var params = [
                     [ 5, 1, value + '' ]
@@ -179,10 +279,10 @@ TerneoHeatfloor.prototype = {
                 })
                     .then((response) => {
                         if (response.data.success) {
-                            this.log.info('[Terneo] [DEBUG] HeatingThresholdTemperature successfully setted to', value);
+                            this.logDebug('[Terneo] [DEBUG] HeatingThresholdTemperature successfully setted to', value);
 
                             lastState['target_temperature'] = value;
-                            $startStateUpdatePoll();
+                            $scheduleStateUpdatePoll(1000);
                             callback();
                         } else {
                             this.log.warn('[Terneo] [WARNING] HeatingThresholdTemperature set failure');
@@ -190,6 +290,7 @@ TerneoHeatfloor.prototype = {
                         }
                     })
                     .catch((error) => {
+                        this.log.warn('[Terneo] [WARNING] HeatingThresholdTemperature set failure', error);
                         callback(error)
                     })
                 ;
@@ -198,7 +299,7 @@ TerneoHeatfloor.prototype = {
 
         activeCharacteristic
             .on('set', (value, callback) => {
-                this.log.info('[Terneo] [DEBUG] Set Active to ' + value + ', type: ' + typeof(value));
+                this.logDebug('[Terneo] [DEBUG] Set Active to ' + value + ', type: ' + typeof(value));
 
                 var power_on;
                 if (value === 1) {
@@ -216,10 +317,10 @@ TerneoHeatfloor.prototype = {
                     })
                         .then((response) => {
                             if (response.data.success) {
-                                this.log.info('[Terneo] [DEBUG] Active successfully setted to', value);
+                                this.log.info('[Terneo] [INFO] Active successfully setted to', value);
 
                                 lastState['power'] = power_on;
-                                $startStateUpdatePoll();
+                                $scheduleStateUpdatePoll(1000);
                                 callback();
                             } else {
                                 this.log.warn('[Terneo] [WARNING] Active set failure');
@@ -238,7 +339,7 @@ TerneoHeatfloor.prototype = {
 
         lockPhysicalControlsCharacteristic
             .on('set', (value, callback) => {
-                this.log.info('[Terneo] [DEBUG] Set LockPhysicalControls to ' + value + ', type: ' + typeof(value));
+                this.logDebug('[Terneo] [DEBUG] Set LockPhysicalControls to ' + value + ', type: ' + typeof(value));
 
                 var lock_on;
                 if (value === 1) {
@@ -256,10 +357,10 @@ TerneoHeatfloor.prototype = {
                     })
                         .then((response) => {
                             if (response.data.success) {
-                                this.log.info('[Terneo] [DEBUG] LockPhysicalControls successfully setted to', lock_on);
+                                this.log.info('[Terneo] [INFO] LockPhysicalControls successfully setted to', lock_on);
 
                                 lastState['lock'] = lock_on;
-                                $startStateUpdatePoll();
+                                $scheduleStateUpdatePoll(1000);
                                 callback();
                             } else {
                                 this.log.warn('[Terneo] [WARNING] LockPhysicalControls set failure');
@@ -277,39 +378,48 @@ TerneoHeatfloor.prototype = {
         ;
 
         var $stateUpdatePollTimeout = null;
-        $startStateUpdatePoll = () => {
-            this.log.info('[Terneo] [DEBUG] Begin state update');
 
+        $scheduleStateUpdatePoll = (timeout) => {
             if ($stateUpdatePollTimeout) {
                 clearTimeout($stateUpdatePollTimeout);
             }
 
+            this.logDebug('[Terneo] [DEBUG] Schedule new state update after ' + (timeout / 1000) + ' sec.');
+            $stateUpdatePollTimeout = setTimeout(() => {
+                $stateUpdatePollTimeout = null;
+                $startStateUpdatePoll();
+            }, timeout);
+        };
+
+        $startStateUpdatePoll = () => {
+            this.logDebug('[Terneo] [DEBUG] Begin state update');
+
             $stateUpdate()
                 .then((state) => {
-                    this.log.info('[Terneo] [DEBUG] State successfully updated');
+                    this.logDebug('[Terneo] [DEBUG] State successfully updated');
 
                     if (state['power'] !== lastState['power']) {
-                        this.log.info('[Terneo] [DEBUG] Active change:', state['power'], '/', lastState['power']);
+                        this.logDebug('[Terneo] [DEBUG] Active change:', state['power'], '/', lastState['power']);
                         activeCharacteristic.updateValue(state['power'] ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE);
                     }
 
                     if (state['lock'] !== lastState['lock']) {
-                        this.log.info('[Terneo] [DEBUG] lock change:', state['lock'], '/', lastState['lock']);
+                        this.logDebug('[Terneo] [DEBUG] lock change:', state['lock'], '/', lastState['lock']);
                         lockPhysicalControlsCharacteristic.updateValue(state['lock'] ? Characteristic.LockPhysicalControls.CONTROL_LOCK_ENABLED : Characteristic.LockPhysicalControls.CONTROL_LOCK_DISABLED);
                     }
 
                     if (state['current_temperature'] !== lastState['current_temperature']) {
-                        this.log.info('[Terneo] [DEBUG] CurrentTemperatureCharacteristic change:', state['current_temperature'], '/', lastState['current_temperature']);
+                        this.logDebug('[Terneo] [DEBUG] CurrentTemperatureCharacteristic change:', state['current_temperature'], '/', lastState['current_temperature']);
                         currentTemperatureCharacteristic.updateValue(state['current_temperature']);
                     }
 
                     if (state['target_temperature'] !== lastState['target_temperature']) {
-                        this.log.info('[Terneo] [DEBUG] HeatingThresholdTemperature change:', state['target_temperature'], '/', lastState['target_temperature']);
+                        this.logDebug('[Terneo] [DEBUG] HeatingThresholdTemperature change:', state['target_temperature'], '/', lastState['target_temperature']);
                         heatingThresholdTemperature.updateValue(state['target_temperature']);
                     }
 
                     if (state['heating'] !== lastState['heating']) {
-                        this.log.info('[Terneo] [DEBUG] heating change:', state['heating'], '/', lastState['heating']);
+                        this.logDebug('[Terneo] [DEBUG] heating change:', state['heating'], '/', lastState['heating']);
                         if (state['heating']) {
                             currentHeaterCoolerStateCharacteristic.updateValue(Characteristic.CurrentHeaterCoolerState.HEATING);
                             //targetHeaterCoolerStateCharacteristic.updateValue(Characteristic.TargetHeaterCoolerState.HEAT);
@@ -321,7 +431,7 @@ TerneoHeatfloor.prototype = {
 
                     if (state['work_mode'] !== lastState['work_mode']) {
                         //var updated_name = this.name;
-                        this.log.info('[Terneo] [DEBUG] work_mode change:', state['work_mode'], '/', lastState['work_mode']);
+                        this.logDebug('[Terneo] [DEBUG] work_mode change:', state['work_mode'], '/', lastState['work_mode']);
                     }
 
                     switch (state['block']) {
@@ -337,11 +447,7 @@ TerneoHeatfloor.prototype = {
                     this.log.warn('[Terneo] [WARNING] State update error', error);
                 })
                 .finally(() => {
-                    this.log.info('[Terneo] [DEBUG] Schedule new state update after ' + this.pollInterval + ' sec.');
-                    $stateUpdatePollTimeout = setTimeout(() => {
-                        $stateUpdatePollTimeout = null;
-                        $startStateUpdatePoll();
-                    }, this.pollInterval * 1000);
+                    $scheduleStateUpdatePoll(this.pollInterval * 1000);
                 })
             ;
         };
