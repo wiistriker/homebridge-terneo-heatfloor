@@ -257,7 +257,7 @@ TerneoHeatfloor.prototype = {
                 if (typeof lastState['target_temperature'] !== 'undefined') {
                     callback(null, lastState['target_temperature']);
                 } else {
-                    callback(null, null);
+                    callback(null, 0);
                 }
             })
             .on('set', (value, callback) => {
