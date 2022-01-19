@@ -4,45 +4,45 @@ const axios = require('axios');
 const TOTP = require('totp.js');
 
 module.exports = function(homebridge) {
-	Service = homebridge.hap.Service;
-  	Characteristic = homebridge.hap.Characteristic;
+    Service = homebridge.hap.Service;
+    Characteristic = homebridge.hap.Characteristic;
 
-  	homebridge.registerAccessory('terneo-heatfloor', 'TerneoHeatfloor', TerneoHeatfloor);
+    homebridge.registerAccessory('homebridge-terneo-heatfloor', 'TerneoHeatfloor', TerneoHeatfloor);
 };
 
 function TerneoHeatfloor(log, config) {
-	this.log = log;
+    this.log = log;
 
-	this.name = config.name;
-	this.apiroute = 'http://' + config.ip;
-	this.pollInterval = config.pollInterval || 60;
+    this.name = config.name;
+    this.apiroute = 'http://' + config.ip;
+    this.pollInterval = config.pollInterval || 60;
 
-	this.manufacturer = 'Terneo';
-	this.serial = config.serial;
-	this.auth = config.auth || null;
-	this.time_offset = config.time_offset || 0;
-	this.model = config.model || packageJson.name;
-	this.firmware = config.firmware || packageJson.version;
+    this.manufacturer = 'Terneo';
+    this.serial = config.serial;
+    this.auth = config.auth || null;
+    this.time_offset = config.time_offset || 0;
+    this.model = config.model || packageJson.name;
+    this.firmware = config.firmware || packageJson.version;
 
-	this.accessory_type = config.accessory_type || 'thermostat';
+    this.accessory_type = config.accessory_type || 'thermostat';
 
     this.minTemp = config.minTemp || 5;
-	this.maxTemp = config.maxTemp || 40;
+    this.maxTemp = config.maxTemp || 40;
 
-	this.debug = config.debug || false;
+    this.debug = config.debug || false;
 
-	let initialize_message = '[Terneo] [INFO] Accessory initialized';
-	if (this.debug) {
+    let initialize_message = '[Terneo] [INFO] Accessory initialized';
+    if (this.debug) {
         initialize_message += ', debug mode enabled';
     }
 
-	this.log(initialize_message);
+    this.log(initialize_message);
 }
 
 TerneoHeatfloor.prototype = {
     identify: function (callback) {
         //this.log('Identify requested!');
-        callback()
+        callback();
     },
     logDebug: function() {
         if (this.debug) {
@@ -90,7 +90,7 @@ TerneoHeatfloor.prototype = {
                 $commitParamsChangesTimeout = null;
                 $commitParamsChanges();
             }, timeout);
-        }
+        };
 
         const $commitParamsChanges = () => {
             if ($commitParamsChangesPromise) {
@@ -294,7 +294,7 @@ TerneoHeatfloor.prototype = {
                     post_params['auth'] = totp.genOTP();
                 }
 
-                post_params.par = params
+                post_params.par = params;
 
                 //console.log(post_params);
 
